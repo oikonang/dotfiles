@@ -1,0 +1,16 @@
+# /Users/oikonang/.config/tmuxinator/default.yml
+
+name: oikonang
+root: ~/
+
+# start session with this window open
+startup_window: playground
+
+windows:
+  - python:
+      layout: main-vertical
+      panes:
+        - source activate python
+        - source activate base | jupyter lab
+  - playground:
+

@@ -44,6 +44,7 @@ export ENHANCD_COMMAND='c'
 export TERM="xterm-256color"
 export EDITOR='/usr/local/bin/emacsclient -c'
 export PKG_CONFIG_PATH=/opt/local/lib/pkgconfig
+export PATH="/Users/oikonang/miniconda3/bin:$PATH"
 # =============================================================================
 #                                   Plugins
 # =============================================================================
@@ -54,7 +55,7 @@ source ~/.zplug/init.zsh
 
 # New staff I added
 source ~/tmuxinator.zsh
-source ~/.profile
+# source ~/.profile
 
 # zplug
 zplug 'zplug/zplug', hook-build:'zplug --self-manage'

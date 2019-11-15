@@ -5,5 +5,5 @@ do
 done
 
 
-# This is for the test ledger. Should be replaced with the active .bashrc
-source ~/src/GSWL-private/.bashrc
+# Source ledger aliases
+source ~/src/ledger/.bashrc
