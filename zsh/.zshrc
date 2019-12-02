@@ -55,7 +55,7 @@ source ~/.zplug/init.zsh
 
 # New staff I added
 source ~/tmuxinator.zsh
-# source ~/.profile
+source ~/.bash_profile
 
 # zplug
 zplug 'zplug/zplug', hook-build:'zplug --self-manage'

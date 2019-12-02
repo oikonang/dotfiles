@@ -423,6 +423,39 @@ Swiper gives us a really efficient incremental search with regular expressions a
       (define-key read-expression-map (kbd "C-r") 'counsel-expression-history)
       ))
 #+END_SRC
+* pdf tools
+#+BEGIN_SRC emacs-lisp
+  ;; wrapper for save-buffer ignoring arguments
+       (defun oikonang/save-buffer-no-args ()
+       "Save buffer ignoring arguments"
+       (save-buffer))
+
+       (use-package pdf-tools
+        :pin manual ;; manually update
+        :config
+         (pdf-tools-install) ;; initialize
+         (setq-default pdf-view-display-size 'fit-page) ;; open pdfs scaled to fit page
+         (setq pdf-annot-activate-created-annootations t) ;; automatically annotate highlights
+         (define-key pdf-view-mode-map (kbd "C-s") 'isearch-forward) ;; use normal isearch
+         (add-hook 'pdf-view-mode-hook (lambda () (cua-mode 0))) ;; turn off cua so that copy works
+         (add-hook 'pdf-view-mode-hook (lambda () (linum-mode -1))) ;; turn off numbering on pdf view
+         (setq pdf-view-resize-factor 1.1)
+         ;; keyboard shortcuts
+         (define-key pdf-view-mode-map (kbd "h") 'pdf-annot-add-highlight-markup-annotation)
+         (define-key pdf-view-mode-map (kbd "t") 'pdf-annot-add-text-annotation)
+         (define-key pdf-view-mode-map (kbd "D") 'pdf-annot-delete)
+         ;; wait until map is available
+         (with-eval-after-load "pdf-annot"
+         (define-key pdf-annot-edit-contents-minor-mode-map (kbd "<return>") 'pdf-annot-edit-contents-commit)
+         (define-key pdf-annot-edit-contents-minor-mode-map (kbd "<S-return>") 'newline)
+         ;; save after adding comment
+         (advice-add 'pdf-annot-edit-contents-commit :after 'oikonang/save-buffer-no-args)))
+         
+
+       (use-package org-pdfview
+        :ensure t)
+  (message "pdf tools finished")
+#+END_SRC
 
 * Languages
 ** latex
@@ -433,7 +466,9 @@ Swiper gives us a really efficient incremental search with regular expressions a
   :ensure auctex)
 
   (use-package auctex
-  :mode (("\\.tex\\'" . latex-mode) ("\\.bib\\'" . bibtex-mode))
+  :mode (("\\.tex\\'" . latex-mode)
+         ("\\.bib\\'" . bibtex-mode)
+         ("\\.pdf\\'" . default))
   :commands (latex-mode LaTeX-mode plain-tex-mode ivy-bibtex)
   :ensure t
   :init
@@ -519,62 +554,70 @@ Swiper gives us a really efficient incremental search with regular expressions a
 #+END_SRC
 *** Rest 
 #+BEGIN_SRC emacs-lisp
-  ;; (setq org-latex-pdf-process
-  ;;     '("pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
-  ;;       "bibtex %b"
-  ;;       "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
-  ;;       "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
+   ;; Use pdf-tools to open PDF files
+   (setq TeX-view-program-list '(("PDF Tools" TeX-pdf-tools-sync-view)) 
+     TeX-view-program-selection '((output-pdf "PDF Tools"))
+     TeX-source-correlate-start-server t)
 
-  ;; (setq org-latex-logfiles-extensions (quote ("lof" "lot" "tex" "aux" "idx" "log" "out" "toc" "nav" "snm" "vrb" "dvi" "fdb_latexmk" "blg" "brf" "fls" "entoc" "ps" "spl" "bbl" "pygtex" "pygstyle")))
+  ;; Update PDF buffers after successful LaTeX runs
+  (add-hook 'TeX-after-compilation-finished-functions
+            #'TeX-revert-document-buffer)
 
+   ;; (setq TeX-source-correlate-start-server t)
+   (setq TeX-shell "/bin/bash")
+   (setq TeX-file-extensions
+         '("Snw" "Rnw" "nw" "tex" "sty" "cls" "ltx" "texi" "texinfo"))
+   (setq TeX-auto-local "tmp/auto")
+   (setq TeX-auto-save t
+         TeX-parse-self t
+         TeX-save-query nil)
+   ;;      TeX-PDF-mode t)
+   (make-variable-buffer-local 'TeX-master) ;; I think this is need because the variable is not buffer local until Auctex is active
+   ;; Make emacs aware of multi-file projects
+   (setq TeX-master nil) ; Query for master file.
+   (setq TeX-master-file-ask nil) ; Query for master file.
 
-  ;; (setq TeX-source-correlate-start-server t)
-  ;; (setq TeX-shell "/bin/bash")
-  ;; (setq TeX-file-extensions
-  ;;       '("Snw" "Rnw" "nw" "tex" "sty" "cls" "ltx" "texi" "texinfo"))
-  ;; (setq TeX-auto-local "tmp/auto")
-  ;; (setq TeX-auto-save t
-  ;;       TeX-parse-self t
-  ;;       TeX-save-query nil)
-  ;; ;;      TeX-PDF-mode t)
-  ;; (make-variable-buffer-local 'TeX-master) ;; I think this is need because the variable is not buffer local until Auctex is active
-  ;;         ;; Make emacs aware of multi-file projects
-  ;; (setq TeX-master nil) ; Query for master file.
-  ;; (setq TeX-master-file-ask nil) ; Query for master file.
+   (setq org-latex-pdf-process
+           '("pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+             "bibtex %b"
+             "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+             "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
+   (setq org-latex-logfiles-extensions (quote ("lof" "lot" "tex" "aux" "idx" "log" "out" "toc" "nav" "snm" "vrb" "dvi" "fdb_latexmk" "blg" "brf" "fls" "entoc" "ps" "spl" "bbl" "pygtex" "pygstyle")))
 
-  ;; (add-hook 'LaTeX-mode-hook (lambda ()
-  ;;                              (local-set-key "\C-ct" 'beamer-insert-frame)
-  ;;                              (local-set-key "\C-cs" 'ivy-insert-latex-math)
-  ;;                              (setq TeX-source-specials-mode t)
-  ;;                              (LaTeX-preview-setup) ;; Preview-LaTeX-mode:
-  ;;                              (autoload 'LaTeX-preview-setup "preview")                             
-  ;;                              (TeX-PDF-mode t) ;; Use PDF mode by default
-  ;;                              (local-set-key "\C-c\C-a" 'TeX-view)
-  ;;                              (local-set-key "\C-ce" 'TeX-next-error)
-  ;;                              ;;Turn on autofill (linewrap) in (La)Tex modes
-  ;;                              (turn-on-auto-fill)
-  ;;                              ))
+   (add-hook 'LaTeX-mode-hook (lambda ()
+                                ;; (local-set-key "\C-ct" 'beamer-insert-frame)
+                                ;; (local-set-key "\C-cs" 'ivy-insert-latex-math)
+                                (setq TeX-source-specials-mode t)
+                                (LaTeX-preview-setup) ;; Preview-LaTeX-mode:
+                                (autoload 'LaTeX-preview-setup "preview")                             
+                                (TeX-PDF-mode t) ;; Use PDF mode by default
+                                ;; (local-set-key "\C-c\C-a" 'TeX-view)
+                                (local-set-key (kbd "<M-S-mouse-1>") #'Tex-view)
+                                ;; (local-set-key "\C-ce" 'TeX-next-error)
+                                ;;Turn on autofill (linewrap) in (La)Tex modes
+                                (turn-on-auto-fill)
+                                ))
 
-  ;; (add-hook 'LaTeX-mode-hook 'TeX-source-correlate-mode)
-  ;; (add-hook 'LaTeX-mode-hook #'LaTeX-preview-setup)
-  ;; (add-hook 'LaTeX-mode-hook #'flyspell-mode)
-  ;; (add-hook 'LaTeX-mode-hook #'turn-on-reftex)
-  ;; (add-hook 'tex-mode-hook 'turn-on-auto-fill)
-  ;; (add-hook 'LaTeX-mode-hook (lambda ()
-  ;;                              (push
-  ;;                               '("latexmk" "latexmk -pdf %s" TeX-run-TeX nil t
-  ;;                                 :help "Run latexmk on file")
-  ;;                               TeX-command-list)))
-  ;; (add-hook 'TeX-mode-hook '(lambda () (setq TeX-command-default "latexmk")))
+   (add-hook 'LaTeX-mode-hook 'TeX-source-correlate-mode)
+   (add-hook 'LaTeX-mode-hook #'LaTeX-preview-setup)
+   (add-hook 'LaTeX-mode-hook #'flyspell-mode)
+   (add-hook 'LaTeX-mode-hook #'turn-on-reftex)
+   (add-hook 'tex-mode-hook 'turn-on-auto-fill)
+   (add-hook 'LaTeX-mode-hook (lambda ()
+                                (push
+                                 '("latexmk" "latexmk -pdf %s" TeX-run-TeX nil t
+                                   :help "Run latexmk on file")
+                                 TeX-command-list)))
+   (add-hook 'TeX-mode-hook '(lambda () (setq TeX-command-default "latexmk")))
 
-  ;; ;; Insert frame
-  ;; (defun my/beamer-insert-frame (title)
-  ;;   "Insert frame"
-  ;;   (interactive "sTitle of frame: ")
-  ;;   (insert (concat "%{{{ " title "\n\\begin{frame}\n\t\\frametitle{" title "}\n\\end{frame}\n%}}} " title "\n"))
-  ;; )
+   ;; Insert frame
+   (defun my/beamer-insert-frame (title)
+     "Insert frame"
+     (interactive "sTitle of frame: ")
+     (insert (concat "%{{{ " title "\n\\begin{frame}\n\t\\frametitle{" title "}\n\\end{frame}\n%}}} " title "\n"))
+   )
 
-  ;; (autoload 'bibfind "bibfind" "Search for BibTeX entries on the web" t)
+   (autoload 'bibfind "bibfind" "Search for BibTeX entries on the web" t)
 
 #+END_SRC
 ** scimax
@@ -731,39 +774,6 @@ A plugin to work on top of hugo webpages.
   ;; (add-hook 'ox-hugo-hook        
   ;;         (eval . (org-hugo-auto-export-mode)))
   :after ox)
-#+END_SRC
-* pdf tools
-#+BEGIN_SRC emacs-lisp
-  ;; wrapper for save-buffer ignoring arguments
-       (defun oikonang/save-buffer-no-args ()
-       "Save buffer ignoring arguments"
-       (save-buffer))
-
-       (use-package pdf-tools
-        :pin manual ;; manually update
-        :config
-         (pdf-tools-install) ;; initialize
-         (setq-default pdf-view-display-size 'fit-page) ;; open pdfs scaled to fit page
-         (setq pdf-annot-activate-created-annootations t) ;; automatically annotate highlights
-         (define-key pdf-view-mode-map (kbd "C-s") 'isearch-forward) ;; use normal isearch
-         (add-hook 'pdf-view-mode-hook (lambda () (cua-mode 0))) ;; turn off cua so that copy works
-         (add-hook 'pdf-view-mode-hook (lambda () (linum-mode -1))) ;; turn off numbering on pdf view
-         (setq pdf-view-resize-factor 1.1)
-         ;; keyboard shortcuts
-         (define-key pdf-view-mode-map (kbd "h") 'pdf-annot-add-highlight-markup-annotation)
-         (define-key pdf-view-mode-map (kbd "t") 'pdf-annot-add-text-annotation)
-         (define-key pdf-view-mode-map (kbd "D") 'pdf-annot-delete)
-         ;; wait until map is available
-         (with-eval-after-load "pdf-annot"
-         (define-key pdf-annot-edit-contents-minor-mode-map (kbd "<return>") 'pdf-annot-edit-contents-commit)
-         (define-key pdf-annot-edit-contents-minor-mode-map (kbd "<S-return>") 'newline)
-         ;; save after adding comment
-         (advice-add 'pdf-annot-edit-contents-commit :after 'oikonang/save-buffer-no-args)))
-         
-
-       (use-package org-pdfview
-        :ensure t)
-  (message "pdf tools finished")
 #+END_SRC
 * windows
 ** window
@@ -1504,72 +1514,72 @@ This is an integration of a folder tree on the side of the project working on
 #+END_SRC
 * centaur-tabs
 #+BEGIN_SRC emacs-lisp
-  (use-package centaur-tabs
-    :load-path "~/.emacs.d/centaur-tabs"
-    :config
-    (setq centaur-tabs-style "bar"
-       centaur-tabs-height 32
-       centaur-tabs-set-icons t
-       centaur-tabs-set-modified-marker "*"
-       centaur-tabs-set-bar 'left)
-    (centaur-tabs-headline-match)
-    ;; (setq centaur-tabs-gray-out-icons 'buffer)
-    ;; (centaur-tabs-enable-buffer-reordering)
-    ;; (setq centaur-tabs-adjust-buffer-order t)
-    ;(centaur-tabs-mode t)
-    (setq uniquify-separator "/")
-    (setq uniquify-buffer-name-style 'forward)
-    (defun centaur-tabs-buffer-groups ()
-      "`centaur-tabs-buffer-groups' control buffers' group rules.
+  ;; (use-package centaur-tabs
+  ;;   :load-path "~/.emacs.d/centaur-tabs"
+  ;;   :config
+  ;;   (setq centaur-tabs-style "bar"
+  ;;      centaur-tabs-height 32
+  ;;      centaur-tabs-set-icons t
+  ;;      centaur-tabs-set-modified-marker "*"
+  ;;      centaur-tabs-set-bar 'left)
+  ;;   (centaur-tabs-headline-match)
+  ;;   ;; (setq centaur-tabs-gray-out-icons 'buffer)
+  ;;   ;; (centaur-tabs-enable-buffer-reordering)
+  ;;   ;; (setq centaur-tabs-adjust-buffer-order t)
+  ;;   ;(centaur-tabs-mode t)
+  ;;   (setq uniquify-separator "/")
+  ;;   (setq uniquify-buffer-name-style 'forward)
+  ;;   (defun centaur-tabs-buffer-groups ()
+  ;;     "`centaur-tabs-buffer-groups' control buffers' group rules.
 
-  Group centaur-tabs with mode if buffer is derived from `eshell-mode' `emacs-lisp-mode' `dired-mode' `org-mode' `magit-mode'.
-  All buffer name start with * will group to \"Emacs\".
-  Other buffer group by `centaur-tabs-get-group-name' with project name."
-      (list
-       (cond
-     ((or (string-equal "*" (substring (buffer-name) 0 1))
-          (memq major-mode '(magit-process-mode
-                 magit-status-mode
-                 magit-diff-mode
-                 magit-log-mode
-                 magit-file-mode
-                 magit-blob-mode
-                 magit-blame-mode
-                 )))
-      "Emacs")
-     ((derived-mode-p 'prog-mode)
-      "Editing")
-     ((derived-mode-p 'dired-mode)
-      "Dired")
-     ((memq major-mode '(helpful-mode
-                 help-mode))
-      "Help")
-     ((memq major-mode '(org-mode
-                 org-agenda-clockreport-mode
-                 org-src-mode
-                 org-agenda-mode
-                 org-beamer-mode
-                 org-indent-mode
-                 org-bullets-mode
-                 org-cdlatex-mode
-                 org-agenda-log-mode
-                 diary-mode))
-      "OrgMode")
-     (t
-      (centaur-tabs-get-group-name (current-buffer))))))
-    :hook
-    (dashboard-mode . centaur-tabs-local-mode)
-    (term-mode . centaur-tabs-local-mode)
-    (calendar-mode . centaur-tabs-local-mode)
-    (org-agenda-mode . centaur-tabs-local-mode)
-    (helpful-mode . centaur-tabs-local-mode)
-    :bind
-    ("C-`" . centaur-tabs-mode)
-    ("C-<prior>" . centaur-tabs-backward)
-    ("C-<next>" . centaur-tabs-forward)
-    ("C-c t s" . centaur-tabs-counsel-switch-group)
-    ("C-c t p" . centaur-tabs-group-by-projectile-project)
-    ("C-c t g" . centaur-tabs-group-buffer-groups))
+  ;; Group centaur-tabs with mode if buffer is derived from `eshell-mode' `emacs-lisp-mode' `dired-mode' `org-mode' `magit-mode'.
+  ;; All buffer name start with * will group to \"Emacs\".
+  ;; Other buffer group by `centaur-tabs-get-group-name' with project name."
+  ;;     (list
+  ;;      (cond
+  ;;    ((or (string-equal "*" (substring (buffer-name) 0 1))
+  ;;         (memq major-mode '(magit-process-mode
+  ;;                magit-status-mode
+  ;;                magit-diff-mode
+  ;;                magit-log-mode
+  ;;                magit-file-mode
+  ;;                magit-blob-mode
+  ;;                magit-blame-mode
+  ;;                )))
+  ;;     "Emacs")
+  ;;    ((derived-mode-p 'prog-mode)
+  ;;     "Editing")
+  ;;    ((derived-mode-p 'dired-mode)
+  ;;     "Dired")
+  ;;    ((memq major-mode '(helpful-mode
+  ;;                help-mode))
+  ;;     "Help")
+  ;;    ((memq major-mode '(org-mode
+  ;;                org-agenda-clockreport-mode
+  ;;                org-src-mode
+  ;;                org-agenda-mode
+  ;;                org-beamer-mode
+  ;;                org-indent-mode
+  ;;                org-bullets-mode
+  ;;                org-cdlatex-mode
+  ;;                org-agenda-log-mode
+  ;;                diary-mode))
+  ;;     "OrgMode")
+  ;;    (t
+  ;;     (centaur-tabs-get-group-name (current-buffer))))))
+  ;;   :hook
+  ;;   (dashboard-mode . centaur-tabs-local-mode)
+  ;;   (term-mode . centaur-tabs-local-mode)
+  ;;   (calendar-mode . centaur-tabs-local-mode)
+  ;;   (org-agenda-mode . centaur-tabs-local-mode)
+  ;;   (helpful-mode . centaur-tabs-local-mode)
+  ;;   :bind
+  ;;   ("C-`" . centaur-tabs-mode)
+  ;;   ("C-<prior>" . centaur-tabs-backward)
+  ;;   ("C-<next>" . centaur-tabs-forward)
+  ;;   ("C-c t s" . centaur-tabs-counsel-switch-group)
+  ;;   ("C-c t p" . centaur-tabs-group-by-projectile-project)
+  ;;   ("C-c t g" . centaur-tabs-group-buffer-groups))
 #+END_SRC
 * budgeting
 ** Ledger

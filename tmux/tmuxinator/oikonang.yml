@@ -11,6 +11,8 @@ windows:
       layout: main-vertical
       panes:
         - source activate python
-        - source activate base | jupyter lab
+        - source activate base && open -a Jupyter
   - playground:
+  - ledger: 
+        - sl && source activate python
 
