@@ -7,7 +7,7 @@ In order to install packages, it is useful to configure the package sources.
   (setq package-archives '(("gnu" . "http://elpa.gnu.org/packages/")
                            ("melpa" . "http://melpa.org/packages/")
                            ("org" . "http://orgmode.org/elpa/")))
-;;  (package-initialize)
+  ;;;(package-initialize)
  
   (defvar bootstrap-version)
   (let ((bootstrap-file
@@ -629,12 +629,6 @@ Swiper gives us a really efficient incremental search with regular expressions a
 #+BEGIN_SRC emacs-lisp :results none
  (require 'scimax-ob)
  (require 'scimax-org-babel-ipython-upstream)
-;;Keep copy-paste keybinding as in original emacs
- (global-set-key "\C-w" 'clipboard-kill-region)
- (global-set-key "\M-w" 'clipboard-kill-ring-save)
- (global-set-key "\C-y" 'clipboard-yank)
-
- ;;(setq ob-ipython-html-to-image-program "/usr/local/bin/wkhtmltopdf")
 #+END_SRC
 ** python
 This is to auto-suggest completion for python

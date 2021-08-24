@@ -13,4 +13,4 @@ ln -sv ~/.dotfiles/emacs/myinit.org ~/.emacs.d/
 ln -sv ~/.dotfiles/anaconda/.condarc ~
 
 # Source the default configurations of my mac environment
-source macosdefaults.sh
+source osxdefaults.sh

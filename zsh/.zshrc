@@ -45,6 +45,22 @@ export TERM="xterm-256color"
 export EDITOR='/usr/local/bin/emacsclient -c'
 export PKG_CONFIG_PATH=/opt/local/lib/pkgconfig
 export PATH="/Users/oikonang/miniconda3/bin:$PATH"
+export PATH=/usr/local/opt/ruby/bin:$PATH
+export PATH=$HOME/.gem/ruby/2.6.0/bin:$PATH
+export JAVA_HOME=$(/usr/libexec/java_home)
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# Go development
+export GOPATH="${HOME}/.go"
+export GOROOT="$(brew --prefix golang)/libexec"
+export PATH="$PATH:${GOPATH}/bin:${GOROOT}/bin"
+test -d "${GOPATH}" || mkdir "${GOPATH}"
+test -d "${GOPATH}/src/github.com" || mkdir -p "${GOPATH}/src/github.com"
+
+# Evaluate ruby environment
+eval "$(rbenv init -)"
 # =============================================================================
 #                                   Plugins
 # =============================================================================
@@ -578,3 +594,6 @@ zplug load
 #ZLE_RPROMPT_INDENT=0
 
 # vim: ft=zsh
+
+# Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
+export PATH="$PATH:$HOME/.rvm/bin"
